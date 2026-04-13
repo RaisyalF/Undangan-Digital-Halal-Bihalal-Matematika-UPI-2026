@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undangan Halal Bihalal</title>
+    <title>Undangan Halal Bihalal Matematika UPI</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,7 +16,8 @@
 
         <div id="main-content" class="hidden">
             
-            <section class="page bg-2"></section>
+            <section class="page bg-2">
+                </section>
 
             <section class="page bg-3">
                 <div class="timer-container" id="timer">
@@ -25,15 +26,16 @@
 
             <section class="page bg-4">
                 <div class="maps-container">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1980.528221804473!2d107.5925345!3d-6.8624143!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68e6b943c2c5ff%3A0x8f2d5917d23d8c11!2sAuditorium%20FPMIPA%20UPI!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                    <iframe src="https://maps.google.com/maps?q=Gedung%20JICA%20FPMIPA%20UPI%20Bandung&t=&z=17&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                 </div>
             </section>
 
             <section class="page bg-5">
                 <form id="formRSVP" class="rsvp-container">
+                    
                     <div class="form-group">
                         <label for="nama">Nama Lengkap:</label>
-                        <input type="text" id="nama" name="nama" required placeholder="Masukkan nama Anda">
+                        <input type="text" id="nama" name="nama" required placeholder="Masukkan nama Anda (beserta gelar)">
                     </div>
 
                     <div class="form-group">
@@ -70,12 +72,17 @@
                         <input type="number" id="jumlahPasti" min="6" value="6">
                     </div>
 
+                    <div class="form-group">
+                        <label for="bukti">Upload Bukti Transfer (Jika Ada):</label>
+                        <input type="file" id="bukti" accept="image/*" style="font-size: 13px;">
+                    </div>
+
                     <input type="text" name="honeypot" id="honeypot" tabindex="-1" autocomplete="off" style="display: none;">
+                    <input type="hidden" name="total" id="totalInput">
+                    <input type="hidden" name="fileData" id="fileData">
 
                     <div id="infoIuran" class="info-iuran hidden-element">
                         </div>
-                    
-                    <input type="hidden" name="total" id="totalInput">
                     
                     <button type="submit" id="btnKirim">Kirim Konfirmasi</button>
                 </form>

@@ -1,6 +1,7 @@
 // ==========================================
-// 1. KONFIGURASI UTAMA & VARIABEL ELEMEN
+// 1. KONFIGURASI UTAMA
 // ==========================================
+// PENTING: Masukkan URL Web App Google Apps Script Anda yang TERBARU di sini!
 const scriptURL = 'https://script.google.com/macros/s/AKfycbwJdit6xUGGQBiO7alhSaR0KjxEnDifvu9yJBuompAdIAPXAO5t9HNW1f6RniiOzVAnNQ/exec'; 
 const targetDate = new Date("May 2, 2026 08:30:00").getTime();
 
@@ -15,13 +16,17 @@ const sectionJumlahPasti = document.getElementById('sectionJumlahPasti');
 const jumlahPastiInput = document.getElementById('jumlahPasti'); 
 const infoIuran = document.getElementById('infoIuran');
 const totalInput = document.getElementById('totalInput');
+const buktiInput = document.getElementById('bukti'); // Elemen upload file
+const fileDataInput = document.getElementById('fileData'); // Elemen hidden untuk data file
 
-// Data Tarif
+// Data Tarif Iuran Jabatan
 const tarif = { "Professor": 600000, "LK": 300000, "Lektor": 200000, "AA": 100000 };
 
+// Fungsi memformat angka ke Rupiah
 const formatRupiah = (angka) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 };
+
 
 // ==========================================
 // 2. LOGIKA TAMPILAN AWAL (COVER & TIMER)
@@ -35,7 +40,6 @@ const timerInterval = setInterval(function() {
     const now = new Date().getTime();
     const distance = targetDate - now;
 
-    // Jika waktu habis
     if (distance < 0) {
         clearInterval(timerInterval);
         document.getElementById("timer").innerHTML = "ACARA SEDANG BERLANGSUNG";
@@ -54,6 +58,7 @@ const timerInterval = setInterval(function() {
         <div><span>${seconds}</span><br><small>Detik</small></div>
     `;
 }, 1000);
+
 
 // ==========================================
 // 3. LOGIKA DINAMIS FORMULIR & IURAN
@@ -126,25 +131,24 @@ const hitungIuran = () => {
         rincian.push(`Konsumsi Tambahan (${extraOrang} org): <b>${formatRupiah(biayaExtra)}</b>`);
     }
 
-    // Render ke Layar
+    // Tampilkan Rincian ke Layar
     if (totalIuran > 0) {
         infoIuran.classList.remove('hidden-element');
         infoIuran.innerHTML = `
             <div style="margin-bottom:8px;">${rincian.join('<br>')}</div>
             <div style="font-weight:bold; font-size:15px; margin-bottom:8px; color: #d9534f;">Total Bayar: ${formatRupiah(totalIuran)}</div>
             <hr style="border:0; border-top:1px dashed #ccc; margin:8px 0;">
-            <i style="font-size: 11px;">Mohon pembayaran dilakukan paling lambat 16 April 2026 ke rek BNI <b>1865034541</b> a.n Nurmala Setianing Putri, dan konfirmasikan ke Bu Nurmala.</i>
+            <i style="font-size: 11px;">Mohon pembayaran dilakukan paling lambat 16 April 2026 ke rek BNI <b>1865034541</b> a.n Nurmala Setianing Putri.</i>
         `;
     } else {
         infoIuran.classList.add('hidden-element');
     }
     
+    // Simpan nominal ke kolom hidden agar bisa dikirim ke Sheets
     if(totalInput) totalInput.value = totalIuran;
 };
 
-// ==========================================
-// 4. EVENT LISTENER & PENGIRIMAN DATA
-// ==========================================
+// Pasang pendeteksi perubahan saat tamu memilih menu
 statusSelect.addEventListener('change', updateForm);
 jabatanSelect.addEventListener('change', hitungIuran);
 jumlahSelect.addEventListener('change', () => {
@@ -153,10 +157,26 @@ jumlahSelect.addEventListener('change', () => {
 });
 if(jumlahPastiInput) jumlahPastiInput.addEventListener('input', hitungIuran);
 
-form.addEventListener('submit', e => {
+
+// ==========================================
+// 4. LOGIKA UPLOAD FOTO & PENGIRIMAN DATA
+// ==========================================
+
+// Fungsi membaca file dan mengubahnya jadi teks panjang (Base64)
+const readFile = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
+// Perhatikan ada tambahan kata 'async' di bawah ini
+form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Pencegah Bot Spam
+    // Pencegah Bot Spam (Honeypot)
     const honeypot = document.getElementById('honeypot').value;
     if (honeypot !== "") {
         alert("Terima kasih! Konfirmasi kehadiran Anda telah tersimpan.");
@@ -164,12 +184,28 @@ form.addEventListener('submit', e => {
         return; 
     }
 
-    btnKirim.innerHTML = "Mengirim...";
+    btnKirim.innerHTML = "Sedang Mengirim Data & Foto...";
     btnKirim.disabled = true;
+
+    // Jika tamu mengupload file, kita ubah dulu jadi teks
+    if (buktiInput && buktiInput.files.length > 0) {
+        try {
+            const base64Data = await readFile(buktiInput.files[0]);
+            fileDataInput.value = base64Data; // Simpan teks panjang tersebut ke hidden input
+        } catch (error) {
+            alert("Gagal membaca file foto. Pastikan ukuran file tidak terlalu besar.");
+            btnKirim.innerHTML = "Kirim Konfirmasi";
+            btnKirim.disabled = false;
+            return;
+        }
+    } else {
+        // Kosongkan jika tidak ada file (opsional)
+        fileDataInput.value = "";
+    }
 
     const formData = new FormData(form);
     
-    // Ubah string ">5" menjadi angka asli agar terbaca di Sheets
+    // Ubah string opsi ">5" menjadi angka asli (misal "7") agar tercatat benar di Sheets
     if (formData.get('jumlah') === '>5' && jumlahPastiInput) {
         formData.set('jumlah', jumlahPastiInput.value);
     }
@@ -177,6 +213,7 @@ form.addEventListener('submit', e => {
     const params = new URLSearchParams();
     formData.forEach((value, key) => { params.append(key, value); });
 
+    // Mulai proses pengiriman ke Google Apps Script
     fetch(scriptURL, {
         method: 'POST',
         mode: 'no-cors',
@@ -184,14 +221,14 @@ form.addEventListener('submit', e => {
         body: params.toString()
     })
     .then(() => {
-        alert("Terima kasih! Konfirmasi kehadiran Anda telah tersimpan.");
+        alert("Terima kasih! Konfirmasi kehadiran & bukti pembayaran Anda berhasil tersimpan.");
         form.reset();
         updateForm(); // Kembalikan tampilan form ke awal
         btnKirim.innerHTML = "Kirim Konfirmasi";
         btnKirim.disabled = false;
     })
     .catch(error => {
-        alert("Terjadi kesalahan. Silakan coba lagi.");
+        alert("Terjadi kesalahan koneksi internet. Silakan coba lagi.");
         btnKirim.innerHTML = "Kirim Konfirmasi";
         btnKirim.disabled = false;
     });
