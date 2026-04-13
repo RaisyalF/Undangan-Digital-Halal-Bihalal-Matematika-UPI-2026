@@ -1,17 +1,46 @@
-// 1. Logika Tombol Buka Undangan
+// ==========================================
+// 1. KONFIGURASI UTAMA & VARIABEL ELEMEN
+// ==========================================
+const scriptURL = 'https://script.google.com/macros/s/AKfycbwJdit6xUGGQBiO7alhSaR0KjxEnDifvu9yJBuompAdIAPXAO5t9HNW1f6RniiOzVAnNQ/exec'; 
+const targetDate = new Date("May 2, 2026 08:30:00").getTime();
+
+// Mengambil elemen-elemen dari HTML
+const form = document.getElementById('formRSVP');
+const btnKirim = document.getElementById('btnKirim');
+const statusSelect = document.getElementById('status');
+const sectionJabatan = document.getElementById('sectionJabatan');
+const jabatanSelect = document.getElementById('jabatan');
+const jumlahSelect = document.getElementById('jumlah');
+const sectionJumlahPasti = document.getElementById('sectionJumlahPasti'); 
+const jumlahPastiInput = document.getElementById('jumlahPasti'); 
+const infoIuran = document.getElementById('infoIuran');
+const totalInput = document.getElementById('totalInput');
+
+// Data Tarif
+const tarif = { "Professor": 600000, "LK": 300000, "Lektor": 200000, "AA": 100000 };
+
+const formatRupiah = (angka) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+};
+
+// ==========================================
+// 2. LOGIKA TAMPILAN AWAL (COVER & TIMER)
+// ==========================================
 document.getElementById('btnBuka').addEventListener('click', function() {
-    // Sembunyikan cover dengan animasi
     document.getElementById('cover').classList.add('cover-hidden');
-    // Tampilkan konten utama
     document.getElementById('main-content').classList.remove('hidden');
 });
-
-// 2. Logika Timer Mundur (Target: 2 Mei 2026, 08:30 WIB)
-const targetDate = new Date("May 2, 2026 08:30:00").getTime();
 
 const timerInterval = setInterval(function() {
     const now = new Date().getTime();
     const distance = targetDate - now;
+
+    // Jika waktu habis
+    if (distance < 0) {
+        clearInterval(timerInterval);
+        document.getElementById("timer").innerHTML = "ACARA SEDANG BERLANGSUNG";
+        return;
+    }
 
     const days = Math.floor(distance / (1000 * 60 * 60 * 24));
     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -24,101 +53,72 @@ const timerInterval = setInterval(function() {
         <div><span>${minutes}</span><br><small>Menit</small></div>
         <div><span>${seconds}</span><br><small>Detik</small></div>
     `;
-
-    if (distance < 0) {
-        clearInterval(timerInterval);
-        document.getElementById("timer").innerHTML = "ACARA SEDANG BERLANGSUNG";
-    }
 }, 1000);
 
-// 3. Logika Kirim Form ke Google Sheets
-// PENTING: Ganti string di bawah ini dengan URL Web App dari Tahap 1!
-// PENTING: Masukkan URL Web App Versi Baru Anda di bawah ini
-const scriptURL = 'https://script.google.com/macros/s/AKfycbwJdit6xUGGQBiO7alhSaR0KjxEnDifvu9yJBuompAdIAPXAO5t9HNW1f6RniiOzVAnNQ/exec'; 
-
-const form = document.getElementById('formRSVP');
-const btnKirim = document.getElementById('btnKirim');
-const statusSelect = document.getElementById('status');
-const sectionJabatan = document.getElementById('sectionJabatan');
-const jabatanSelect = document.getElementById('jabatan');
-const jumlahSelect = document.getElementById('jumlah');
-const infoIuran = document.getElementById('infoIuran');
-
-// Daftar Tarif Jabatan
-const tarif = {
-    "Professor": 600000,
-    "LK": 300000,
-    "Lektor": 200000,
-    "AA": 100000
+// ==========================================
+// 3. LOGIKA DINAMIS FORMULIR & IURAN
+// ==========================================
+const cekJumlahLebihDari5 = () => {
+    if (sectionJumlahPasti) { 
+        if (jumlahSelect.value === ">5") {
+            sectionJumlahPasti.classList.remove('hidden-element');
+        } else {
+            sectionJumlahPasti.classList.add('hidden-element');
+        }
+    }
 };
 
-// Fungsi memformat angka ke Rupiah
-const formatRupiah = (angka) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
-};
-
-// Fungsi Mengatur Tampilan Form
-// Fungsi Mengatur Tampilan Form
 const updateForm = () => {
     const status = statusSelect.value;
-    const currentJumlah = parseInt(jumlahSelect.value) || 1;
-    
-    // Kosongkan dulu pilihan jumlah yang ada
     jumlahSelect.innerHTML = '';
 
     if (status === "Dosen Aktif") {
-        // Tampilkan pilihan jabatan
         sectionJabatan.classList.remove('hidden-element');
-        // Masukkan opsi 1 sampai 4
         jumlahSelect.innerHTML = `
             <option value="1">1 Orang</option>
             <option value="2">2 Orang</option>
             <option value="3">3 Orang</option>
             <option value="4">4 Orang</option>
+            <option value="5">5 Orang</option>
+            <option value=">5">Lebih dari 5 Orang</option>
         `;
     } else if (status === "Pensiunan") {
-        // Sembunyikan jabatan jika pensiunan
         sectionJabatan.classList.add('hidden-element');
         jabatanSelect.value = ""; 
-        // Masukkan opsi 1 sampai 2 saja
         jumlahSelect.innerHTML = `
             <option value="1">1 Orang</option>
             <option value="2">2 Orang</option>
         `;
     }
-
-    // Mengatur ulang pilihan sebelumnya agar tidak error
-    // Limit maksimal: Aktif = 4, Pensiunan = 2
-    const batasMaksimal = status === "Dosen Aktif" ? 4 : 2; 
     
-    if (currentJumlah <= batasMaksimal) {
-        jumlahSelect.value = currentJumlah;
-    } else {
-        jumlahSelect.value = "1"; // Jika opsi sebelumnya kelebihan, kembalikan ke 1
-    }
-
-    // Panggil ulang perhitungan iuran jika ada perubahan status
+    cekJumlahLebihDari5();
     hitungIuran();
 };
 
-// Fungsi Menghitung Biaya
 const hitungIuran = () => {
     const status = statusSelect.value;
     const jabatan = jabatanSelect.value;
-    const jumlah = parseInt(jumlahSelect.value) || 1;
+    
+    // Tentukan jumlah pasti untuk perhitungan
+    let jumlah = 1;
+    if (jumlahSelect.value === ">5" && jumlahPastiInput) {
+        jumlah = parseInt(jumlahPastiInput.value) || 6;
+    } else {
+        jumlah = parseInt(jumlahSelect.value) || 1;
+    }
     
     if (!status) return;
 
     let totalIuran = 0;
     let rincian = [];
 
-    // Hitung Biaya Jabatan (Hanya Dosen Aktif)
+    // Tambah Iuran Jabatan
     if (status === "Dosen Aktif" && jabatan && tarif[jabatan]) {
         totalIuran += tarif[jabatan];
         rincian.push(`Iuran Jabatan (${jabatan}): <b>${formatRupiah(tarif[jabatan])}</b>`);
     }
 
-    // Hitung Biaya Tambahan Konsumsi (> 2 orang)
+    // Tambah Iuran Konsumsi
     if (jumlah > 2) {
         const extraOrang = jumlah - 2;
         const biayaExtra = extraOrang * 75000;
@@ -126,7 +126,7 @@ const hitungIuran = () => {
         rincian.push(`Konsumsi Tambahan (${extraOrang} org): <b>${formatRupiah(biayaExtra)}</b>`);
     }
 
-    // Tampilkan Informasi ke Layar
+    // Render ke Layar
     if (totalIuran > 0) {
         infoIuran.classList.remove('hidden-element');
         infoIuran.innerHTML = `
@@ -138,19 +138,25 @@ const hitungIuran = () => {
     } else {
         infoIuran.classList.add('hidden-element');
     }
-    document.getElementById('totalInput').value = totalIuran;
+    
+    if(totalInput) totalInput.value = totalIuran;
 };
 
-// Pasang pendeteksi perubahan
+// ==========================================
+// 4. EVENT LISTENER & PENGIRIMAN DATA
+// ==========================================
 statusSelect.addEventListener('change', updateForm);
 jabatanSelect.addEventListener('change', hitungIuran);
-jumlahSelect.addEventListener('change', hitungIuran);
+jumlahSelect.addEventListener('change', () => {
+    cekJumlahLebihDari5();
+    hitungIuran();
+});
+if(jumlahPastiInput) jumlahPastiInput.addEventListener('input', hitungIuran);
 
-// Logika Submit Form
 form.addEventListener('submit', e => {
     e.preventDefault();
 
-    // Cek Honeypot (Anti-Bot)
+    // Pencegah Bot Spam
     const honeypot = document.getElementById('honeypot').value;
     if (honeypot !== "") {
         alert("Terima kasih! Konfirmasi kehadiran Anda telah tersimpan.");
@@ -161,8 +167,13 @@ form.addEventListener('submit', e => {
     btnKirim.innerHTML = "Mengirim...";
     btnKirim.disabled = true;
 
-    // Menggunakan URLSearchParams agar stabil menembus CORS
     const formData = new FormData(form);
+    
+    // Ubah string ">5" menjadi angka asli agar terbaca di Sheets
+    if (formData.get('jumlah') === '>5' && jumlahPastiInput) {
+        formData.set('jumlah', jumlahPastiInput.value);
+    }
+
     const params = new URLSearchParams();
     formData.forEach((value, key) => { params.append(key, value); });
 
@@ -175,7 +186,7 @@ form.addEventListener('submit', e => {
     .then(() => {
         alert("Terima kasih! Konfirmasi kehadiran Anda telah tersimpan.");
         form.reset();
-        updateForm(); // Reset tampilan ke awal
+        updateForm(); // Kembalikan tampilan form ke awal
         btnKirim.innerHTML = "Kirim Konfirmasi";
         btnKirim.disabled = false;
     })
