@@ -87,7 +87,8 @@ const updateForm = () => {
             <option value="5">5 Orang</option>
             <option value=">5">Lebih dari 5 Orang</option>
         `;
-    } else if (status === "Pensiunan") {
+    } else if (status === "Pensiunan" || status === "TenDik/Pensiunan TenDik") {
+        // Gabungkan logika Pensiunan dan TenDik karena sama-sama maksimal 2 orang
         sectionJabatan.classList.add('hidden-element');
         jabatanSelect.value = ""; 
         jumlahSelect.innerHTML = `
