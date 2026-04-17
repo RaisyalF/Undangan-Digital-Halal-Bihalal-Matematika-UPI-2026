@@ -16,8 +16,6 @@ const sectionJumlahPasti = document.getElementById('sectionJumlahPasti');
 const jumlahPastiInput = document.getElementById('jumlahPasti'); 
 const infoIuran = document.getElementById('infoIuran');
 const totalInput = document.getElementById('totalInput');
-const buktiInput = document.getElementById('bukti'); // Elemen upload file
-const fileDataInput = document.getElementById('fileData'); // Elemen hidden untuk data file
 
 // Data Tarif Iuran Jabatan
 const tarif = { "Professor": 600000, "LK": 300000, "Lektor": 200000, "AA": 100000 };
@@ -160,21 +158,10 @@ if(jumlahPastiInput) jumlahPastiInput.addEventListener('input', hitungIuran);
 
 
 // ==========================================
-// 4. LOGIKA UPLOAD FOTO & PENGIRIMAN DATA
+// 4. LOGIKA PENGIRIMAN DATA (Tanpa Foto)
 // ==========================================
 
-// Fungsi membaca file dan mengubahnya jadi teks panjang (Base64)
-const readFile = (file) => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-};
-
-// Perhatikan ada tambahan kata 'async' di bawah ini
-form.addEventListener('submit', async (e) => {
+form.addEventListener('submit', (e) => {
     e.preventDefault();
 
     // Pencegah Bot Spam (Honeypot)
@@ -185,24 +172,8 @@ form.addEventListener('submit', async (e) => {
         return; 
     }
 
-    btnKirim.innerHTML = "Sedang Mengirim Data & Foto...";
+    btnKirim.innerHTML = "Sedang Mengirim Data...";
     btnKirim.disabled = true;
-
-    // Jika tamu mengupload file, kita ubah dulu jadi teks
-    if (buktiInput && buktiInput.files.length > 0) {
-        try {
-            const base64Data = await readFile(buktiInput.files[0]);
-            fileDataInput.value = base64Data; // Simpan teks panjang tersebut ke hidden input
-        } catch (error) {
-            alert("Gagal membaca file foto. Pastikan ukuran file tidak terlalu besar.");
-            btnKirim.innerHTML = "Kirim Konfirmasi";
-            btnKirim.disabled = false;
-            return;
-        }
-    } else {
-        // Kosongkan jika tidak ada file (opsional)
-        fileDataInput.value = "";
-    }
 
     const formData = new FormData(form);
     
@@ -222,7 +193,7 @@ form.addEventListener('submit', async (e) => {
         body: params.toString()
     })
     .then(() => {
-        alert("Terima kasih! Konfirmasi kehadiran & bukti pembayaran Anda berhasil tersimpan.");
+        alert("Terima kasih! Konfirmasi kehadiran Anda berhasil tersimpan.");
         form.reset();
         updateForm(); // Kembalikan tampilan form ke awal
         btnKirim.innerHTML = "Kirim Konfirmasi";
